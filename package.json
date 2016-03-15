@@ -1,0 +1,22 @@
+{
+  "name": "dns-server",
+  "version": "1.0.0",
+  "description": "A DNS server with a rest API",
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fxbox/dns-server.git"
+  },
+  "author": "The Project Link Team",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/fxbox/dns-server/issues"
+  },
+  "homepage": "https://github.com/fxbox/dns-server",
+  "dependencies": {
+    "native-dns": "^0.7.0"
+  }
+}
