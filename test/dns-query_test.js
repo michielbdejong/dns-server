@@ -1,3 +1,4 @@
+"use strict";
 var dns = require('native-dns');
 var client = require('./client');
 var server = require('../src/server');
@@ -33,26 +34,55 @@ function query(questionOptions, callback) {
 
 
 function setAndQuery() {
-  var testValue = '123.123.42.42';
-  client.set('test/fixtures/certs/', 'localhost', API_PORT,
-      '1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net', {
-        type: 'A',
-        value: testValue
-      }, function(err, response) {
-        query({
-          name: '1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net',
-          type: 'A',
-        }, function(err, answers) {
-          if(err === null && answers[0].answer[0].address === testValue) {
-            console.log('PASS');
-          } else {
-            console.log('FAIL');
-          }
-          server.stop();
-        });
-      });
+  var promiseCallbacks = [];
+
+  promiseCallbacks.push(new Promise(function(resolve, reject) {
+      var testValue = '123.123.42.42';
+      client.set('test/fixtures/certs/', 'localhost', API_PORT,
+          '1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net', {
+            type: 'A',
+            value: testValue
+          }, function(err, response) {
+            query({
+              name: '1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net',
+              type: 'A',
+            }, function(err, answers) {
+              if(err === null && answers[0].answer[0].address === testValue) {
+                console.log('PASS');
+                resolve();
+              } else {
+                console.log('FAIL', answers[0]);
+                reject();
+              }
+            });
+          });
+  }));
+
+  promiseCallbacks.push(new Promise(function(resolve, reject) {
+      var testName = "name"
+      client.set('test/fixtures/certs/', 'localhost', API_PORT,
+          '1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net', {
+            type: 'CNAME',
+            value: testName
+          }, function(err, response) {
+            query({
+              name: '1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net',
+              type: 'CNAME',
+            }, function(err, answers) {
+              if(err === null && answers[0].answer[0].data === testName) {
+                console.log('PASS');
+                resolve();
+              } else {
+                console.log('FAIL', answers[0]);
+                reject();
+              }
+            });
+          });
+  }));
+
+  return Promise.all(promiseCallbacks);
 }
 
 //...
 server.serve('test/fixtures/certs/', DNS_PORT, API_PORT, ZONE_ROOT);
-setAndQuery();
+setAndQuery().then(() => server.stop());
