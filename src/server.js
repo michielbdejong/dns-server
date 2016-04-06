@@ -6,13 +6,15 @@ const dnsServer = dns.createServer();
 const https = require('https');
 const types = {
   1: 'A',
+  5: 'CNAME',
   16: 'TXT'
 };
 const API_BASE = ['', 'v1', 'dns'];
 const RECORD_TTL = 600;
 let records = {
   TXT: {},
-  A: {}
+  A: {},
+  CNAME: {},
 };
 let apiServer;
 
@@ -28,10 +30,16 @@ exports.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
     }
     if (records[type] &&
         records[type][host]) {
+      var data;
+      if (type === 'CNAME') {
+        data = records[type][host];
+      } else if (type === 'TXT') {
+        data = [records[type][host]]
+      }
       response.answer.push(dns[type]({
         name: host,
         address: records[type][host], //for A records
-        data: [records[type][host]], //for TXT records
+        data: data,
         ttl: RECORD_TTL,
       }));
     }
