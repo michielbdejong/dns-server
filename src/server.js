@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const dns = require('native-dns');
-const dnsServer = dns.createServer();
+const dnsCreateServer = dns.createServer;
 const https = require('https');
 const types = {
   1: 'A',
@@ -11,16 +11,26 @@ const types = {
 };
 const API_BASE = ['', 'v1', 'dns'];
 const RECORD_TTL = 600;
-let records = {
-  TXT: {},
-  A: {},
-  CNAME: {},
-};
-let apiServer;
 
-exports.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
+// Special value for A records - if A record is CNAME_REF, then respond with a
+// CNAME for the query.
+const CNAME_REF = 'CNAME_REF';
+
+function DnsApiServer() {
+    this.dnsServer = dnsCreateServer();
+    this.apiServer = {};
+
+    this.records = {
+      TXT: {},
+      A: {},
+      CNAME: {},
+    };
+}
+
+DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
+  const records = this.records;
   const apiRoot = API_BASE.concat(zoneRoot.split('.').reverse());
-  dnsServer.on('request', function(request, response) {
+  this.dnsServer.on('request', function(request, response) {
     var type, host;
     try {
       type = types[request.question[0].type];
@@ -28,9 +38,14 @@ exports.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
     } catch (e) {
       // Ignore
     }
+
     if (records[type] &&
         records[type][host]) {
       var data;
+      if (records[type][host] === CNAME_REF) {
+          type = 'CNAME';
+      }
+
       if (type === 'CNAME') {
         data = records[type][host];
       } else if (type === 'TXT') {
@@ -46,13 +61,13 @@ exports.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
     response.send();
   });
 
-  dnsServer.on('error', function(err) {
+  this.dnsServer.on('error', function(err) {
     console.log(err.stack);
   });
 
-  dnsServer.serve(dnsPort);
+  this.dnsServer.serve(dnsPort);
 
-  apiServer = https.createServer({
+  this.apiServer = https.createServer({
     key: fs.readFileSync(certDir + '/privkey.pem'),
     cert: fs.readFileSync(certDir + '/cert.pem'),
     ca: fs.readFileSync(certDir + '/chain.pem'),
@@ -103,6 +118,13 @@ exports.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
         res.end('Body should be JSON');
         return;
       }
+
+      if (fields.type === 'CNAME') {
+        // Push an A record for the CNAME so that DNS requests for an A respond
+        // with a CNAME record.
+        records['A'][host] = 'CNAME_REF';
+      }
+
       records[fields.type][host] = fields.value;
       fs.writeFile('./records.json', JSON.stringify(records), function(err) {
         if (err) {
@@ -116,7 +138,9 @@ exports.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
   }).listen(apiPort);
 };
 
-exports.stop = function() {
-  dnsServer.close();
-  apiServer.close();
+DnsApiServer.prototype.stop = function() {
+  this.dnsServer.close();
+  this.apiServer.close();
 };
+
+module.exports = DnsApiServer;

@@ -1,7 +1,7 @@
 "use strict";
 var dns = require('native-dns');
 var client = require('./client');
-var server = require('../src/server');
+var DnsApiServer = require('../src/server');
 
 const DNS_PORT = 53;
 const API_PORT = 5300;
@@ -33,7 +33,7 @@ function query(questionOptions, callback) {
 }
 
 
-function setAndQuery() {
+function setAndQueryA() {
   var promiseCallbacks = [];
 
   promiseCallbacks.push(new Promise(function(resolve, reject) {
@@ -48,15 +48,21 @@ function setAndQuery() {
               type: 'A',
             }, function(err, answers) {
               if(err === null && answers[0].answer[0].address === testValue) {
-                console.log('PASS');
+                console.log('PASS 1');
                 resolve();
               } else {
-                console.log('FAIL', answers[0]);
+                console.log('FAIL 1', answers[0]);
                 reject();
               }
             });
           });
   }));
+
+  return Promise.all(promiseCallbacks);
+}
+
+function setAndQueryCname() {
+  var promiseCallbacks = [];
 
   promiseCallbacks.push(new Promise(function(resolve, reject) {
       var testName = "name"
@@ -67,13 +73,13 @@ function setAndQuery() {
           }, function(err, response) {
             query({
               name: '1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net',
-              type: 'CNAME',
+              type: 'A',
             }, function(err, answers) {
               if(err === null && answers[0].answer[0].data === testName) {
-                console.log('PASS');
+                console.log('PASS 2');
                 resolve();
               } else {
-                console.log('FAIL', answers[0]);
+                console.log('FAIL 2', answers[0]);
                 reject();
               }
             });
@@ -84,5 +90,20 @@ function setAndQuery() {
 }
 
 //...
+console.log("Starting server");
+let server = new DnsApiServer();
 server.serve('test/fixtures/certs/', DNS_PORT, API_PORT, ZONE_ROOT);
-setAndQuery().then(() => server.stop());
+setAndQueryA().then(() => {
+    console.log("Stopping server");
+    server.stop();
+    console.log("Stopped server!");
+}).then(() => {
+    console.log("Starting server");
+    let server = new DnsApiServer();
+    server.serve('test/fixtures/certs/', DNS_PORT, API_PORT, ZONE_ROOT);
+    setAndQueryCname().then(() => {
+        server.stop();
+    });
+}).catch((e) => {
+    console.log(e.stack);
+});
