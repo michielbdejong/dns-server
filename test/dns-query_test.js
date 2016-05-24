@@ -1,7 +1,7 @@
 "use strict";
 var dns = require('native-dns');
 var client = require('./client');
-var DnsApiServer = require('../src/server');
+var DnsApiServer = require('../server/server');
 
 const DNS_PORT = 53;
 const API_PORT = 5300;

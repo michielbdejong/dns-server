@@ -32,6 +32,8 @@
 
   "predef": [
     "exports",
-    "require"
+    "require",
+    "process",
+    "module"
   ]
 }
