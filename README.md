@@ -1,11 +1,11 @@
-# dns-server
+# pagekite-letsencrypt
 Server that helps the Box to announce its local IP address without relying on mDNS, and to register its LetsEncrypt cert for use on its local IP address.
 
 ## Usage
 Run the server:
 ````bash
-docker build -t dns-server server/
-docker run -d --net=host dns-server
+docker build -t pagekite-letsencrypt server/
+docker run -d --net=host pagekite-letsencrypt
 ````
 
 Add a few records:
