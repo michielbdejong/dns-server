@@ -4,24 +4,27 @@ Server that helps the Box to announce its local IP address without relying on mD
 ## Usage
 Run the server:
 ````bash
-docker build -t dns-server .
+docker build -t dns-server server/
 docker run -d --net=host dns-server
 ````
 
 Add a few records:
 ````bash
-curl -i -X POST -d "{\"type\":\"TXT\",\"value\":\"hello\"}" \
-  http://localhost:5300/v1/dns/org/asdf/bla/192-168-0-42/_acme-challenge
-curl -i -X POST -d "{\"type\":\"A\",\"value\":\"192.168.0.42\"}" \
-  http://localhost:5300/v1/dns/org/asdf/bla/192-168-0-42
+SERVER=127.0.0.1
+# On Mac OSX:
+# SERVER=192.168.99.100
+node client/index server/test/fixtures/certs/ $SERVER 5300 \
+  1fa576050d8b3710e57a2d62e84f6781504caf7e.box.knilxof.org \
+  "{\"type\": \"A\", \"value\": \"123.123.123.123\"}"
+node client/index server/test/fixtures/certs/ $SERVER 5300 \
+  _acme-challenge.1fa576050d8b3710e57a2d62e84f6781504caf7e.box.knilxof.org \
+  "{\"type\": \"TXT\", \"value\": \"deadbeef\"}"
 ````
-
-NB: On MacOS, Docker runs inside a virtual machine, probably on 192.168.99.100, so you may need to use that instead of 'localhost'.
 
 Query them:
 ````bash
-dig A 192-168-0-42.bla.asdf.org @localhost
-dig TXT _acme-challenge.192-168-0-42.bla.asdf.org @localhost
+dig A 1fa576050d8b3710e57a2d62e84f6781504caf7e.box.knilxof.org @$SERVER
+dig TXT _acme-challenge.1fa576050d8b3710e57a2d62e84f6781504caf7e.box.knilxof.org @$SERVER
 ````
 
 Run the tests:
@@ -30,7 +33,6 @@ cd server
 npm install
 jshint *.js
 jscs *.js
-mv node_modules ..
-cd ..
 sudo node test/dns-query_test.js
+cd ..
 ````
