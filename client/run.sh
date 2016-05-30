@@ -8,4 +8,4 @@ echo kitename = $DOMAIN > ~/.pagekite.rc
 echo kitesecret = $SECRET >> ~/.pagekite.rc
 
 pagekite.py --frontend=$SERVER:80 \
-    192.168.99.100:8000 https://$SERVER:443
+    192.168.99.100:8000 https://$DOMAIN:443
