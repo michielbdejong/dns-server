@@ -18,6 +18,15 @@ docker build -t pagekite-letsencrypt server/
 docker run -d --net=host pagekite-letsencrypt
 ````
 
+Run the client:
+````bash
+cd client/
+wget https://raw.githubusercontent.com/lukas2511/letsencrypt.sh/master/letsencrypt.sh
+python -m SimpleHTTPServer 8000
+node proxy.js
+````
+
+
 Add a few records:
 ````bash
 SERVER=127.0.0.1
