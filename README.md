@@ -22,7 +22,9 @@ Run the client:
 ````bash
 cd client/
 wget https://raw.githubusercontent.com/lukas2511/letsencrypt.sh/master/letsencrypt.sh
+chmod u+x letsencrypt.sh
 python -m SimpleHTTPServer 8000
+npm install http-proxy
 node proxy.js
 ````
 

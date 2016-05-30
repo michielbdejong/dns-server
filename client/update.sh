@@ -4,14 +4,11 @@ echo "Got called: ./update.sh $1 $2 $3"
 
 echo "Creating DNS records..."
 
-node ./apiCall.js knilxof.org 5300 /v1/dns/org/knilxof/box/$1 "{\"type\":\"A\",\"value\":\"$2\"}"
-node ./apiCall.js knilxof.org 5300 /v1/dns/org/knilxof/box/$1/a "{\"type\":\"A\",\"value\":\"$2\"}"
-node ./apiCall.js knilxof.org 5300 /v1/dns/org/knilxof/box/$1/b "{\"type\":\"A\",\"value\":\"$2\"}"
-node ./apiCall.js knilxof.org 5300 /v1/dns/org/knilxof/box/$1/remote "{\"type\":\"A\",\"value\":\"$2\"}"
+node ./apiCall.js ./certs/ knilxof.org 5300 $1 "{\"type\":\"A\",\"value\":\"$2\"}"
+node ./apiCall.js ./certs/ knilxof.org 5300 a.$1 "{\"type\":\"A\",\"value\":\"$2\"}"
+node ./apiCall.js ./certs/ knilxof.org 5300 b.$1 "{\"type\":\"A\",\"value\":\"$2\"}"
+node ./apiCall.js ./certs/ knilxof.org 5300 remote.$1 "{\"type\":\"A\",\"value\":\"$3\"}"
 
-echo "$1.box.knilxof.org a.$1.box.knilxof.org b.$1.box.knilxof.org remote.$1.box.knilxof.org" > ./domains.txt
+echo "$1 a.$1 b.$1 remote.$1" > ./domains.txt
 echo "Getting SAN cert for: `cat domains.txt`"
 ./letsencrypt.sh --cron --challenge dns-01 --hook ./deploy-challenge.sh
-
-echo "Setting remote. to use the tunnel"
-node ./apiCall.js knilxof.org 5300 /v1/dns/org/knilxof/box/$1/remote "{\"type\":\"A\",\"value\":\"$3\"}"
