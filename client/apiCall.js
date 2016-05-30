@@ -1,19 +1,30 @@
-'use strict';
+const https = require('https');
+const fs = require('fs');
 
-var dnsApiClient = require('./client');
+var args = process.argv;
+var options = {
+  hostname: args[2],
+  port: args[3],
+  path: args[4],
+  method: 'POST',
+  key: fs.readFileSync('certs/server/my-server.key.pem'),
+  cert: fs.readFileSync('certs/server/my-server.crt.pem'),
+  rejectUnauthorized: false
+};
+console.log(options);
+var req = https.request(options, (res) => {
+  console.log('statusCode: ', res.statusCode);
+  console.log('headers: ', res.headers);
 
-if (process.argv.length < 5) {
-  console.error('Example usage: node client/index server/test/fixtures/certs ' +
-      '$SERVER 5300 1fa576050d8b3710e57a2d62e84f6781504caf7e.xob.useraddress.net ' +
-      '"{type: \'A\', value: \'123.123.123.123\'}"');
-  return;
-}
-
-var args = process.argv.slice(2);
-console.log('Parsing', args[4]);
-args[4] = JSON.parse(args[4]);
-args.push(function(res) {
-  console.log('Result:', res);
+  res.on('data', (d) => {
+    process.stdout.write(d);
+  });
 });
 
-dnsApiClient.set.apply(dnsApiClient, args);
+// write data to request body
+req.write(args[5]);
+req.end();
+
+req.on('error', (e) => {
+  console.error(e);
+});
