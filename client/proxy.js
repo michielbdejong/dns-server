@@ -3,10 +3,8 @@
 
 var https = require('https');
 var fs = require('fs');
-var qr = require('qr-image');
 var exec = require('child_process').exec;
 var proxy = require('http-proxy').createProxyServer();
-var mdns = require('mdns');
 var ports = {
   backend: 3000,
   selfSigned: 4333,
@@ -15,7 +13,6 @@ var ports = {
 var os = require('os');
 var TUNNEL_IPADDR = '52.36.71.23';
 var DNS_ZONE = 'box.knilxof.org';
-var qrCodeMsg = '';
 
 function run(cmd, ignoreStdErr) {
   console.log(cmd);
@@ -58,7 +55,6 @@ function buildSelfSigned() {
   }).then(out => {
     fqdn = out.substring('SHA256 Fingerprint='.length)
         .split(':').join('').toLowerCase().trim().substring(0, 32) + '.self-signed';
-    qrWrite(`https://${fqdn}:${ports.selfSigned}/`, 'qr-mdns.svg');
 
     // Create a request from your Device, which your Root CA will sign
     return run('openssl req -new -key scripts/certs/server/my-server.key.pem ' +
@@ -82,7 +78,6 @@ function buildSelfSigned() {
     var fingerprint = out.substring('SHA1 Fingerprint='.length)
         .split(':').join('').toLowerCase().trim();
     console.log('client cert fingerprint is', fingerprint);
-    qrWrite(`https://${fingerprint}.${DNS_ZONE}:${ports.publicLocal}/`, 'qr-public-local.svg');
 
     return fingerprint;
   });
@@ -126,48 +121,6 @@ function buildPublicLocal(fqdn) {
   });
 }
 
-function mdnsServe(fqdn) {
-  // advertise a https server:
-  mdns.createAdvertisement(mdns.tcp('https'), ports.front, {
-    // seems that https://www.npmjs.com/package/cordova-plugin-zeroconf does not
-    // support custom name field, so using txtRecord instead:
-    txtRecord: {
-      name: fqdn
-    }
-  }).start();
-
-  // // For debugging purposes:
-  // var browser = mdns.createBrowser(mdns.tcp('https'));
-  // browser.on('serviceUp', function(service) {
-  //   console.log("service up: ", service);
-  // });
-  // browser.on('serviceDown', function(service) {
-  //   console.log("service down: ", service);
-  // });
-  // browser.start();
-  return Promise.resolve();
-}
-
-function qrWrite(qrCodeString, filename) {
-  const qr_svg = qr.image(qrCodeString, { type: 'svg' });
-  qr_svg.pipe(fs.createWriteStream(filename));
-  qrCodeMsg += (`Wrote string ${qrCodeString} into ${filename}, please display and scan.\n`);
-}
-
-function proxySelfSigned(fqdn) {
-  // serve a web server on the local network:
-  https.createServer({
-    key: fs.readFileSync('scripts/certs/server/my-server.key.pem'),
-    cert: fs.readFileSync('scripts/certs/server/my-server.crt.pem'),
-    ca: fs.readFileSync('scripts/certs/ca/my-root-ca.crt.pem')
-  }, (req, res) => {
-    proxy.web(req, res, { target: `http://localhost:${ports.backend}` });
-  }).listen(ports.selfSigned);
-  console.log(`Proxying https port ${ports.selfSigned} to http port ${ports.backend}, ` +
-      `ready for connections.`);
-  return Promise.resolve();
-}
-
 function proxyPublicLocal(hash) {
   // serve a web server on the local network:
   https.createServer({
@@ -190,14 +143,9 @@ buildSelfSigned().then(fqdn => {
     }, 1000);
     return proxyPublicLocal(hash);
   }).then(() => {
-    console.log('calling mdnsServe', fqdn);
-    return mdnsServe(fqdn);
-  }).then(() => {
     console.log('calling proxySelfSigned', fqdn);
     return proxySelfSigned(fqdn);
   });
-}).then(() => {
-  console.log(qrCodeMsg);
 }).catch(err => {
   console.error(err);
 });
