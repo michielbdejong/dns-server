@@ -1,6 +1,16 @@
 # pagekite-letsencrypt
 Server that helps the Box to announce its local IP address without relying on mDNS, and to register its LetsEncrypt cert for use on its local IP address.
 
+## Architecture
+
+````
+localhost:8000   ----   proxy.js   ----  pagekite.py (backend)  ----  pagekite.py (frontend)  ----  browser
+                              \  \                                                                /  /
+                               \   ----  DNS api  ----  DNS server  -----------------------------   /
+                                \                             /                                    /
+                                  ----  LetsEncrypt API  ----    (-  -  -  -)   LetsEncrypt trust
+````
+
 ## Usage
 Run the server:
 ````bash
