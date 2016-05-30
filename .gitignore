@@ -2,3 +2,4 @@
 /server/records.json
 /client/node_modules
 /client/scripts/certs
+/client/scripts/domains.txt

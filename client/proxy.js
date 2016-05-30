@@ -6,8 +6,7 @@ var fs = require('fs');
 var exec = require('child_process').exec;
 var proxy = require('http-proxy').createProxyServer();
 var ports = {
-  backend: 3000,
-  selfSigned: 4333,
+  backend: 8000,
   publicLocal: 4334
 };
 var os = require('os');
@@ -142,9 +141,6 @@ buildSelfSigned().then(fqdn => {
       console.log(`Try this: openssl s_client -connect ${hash}.${DNS_ZONE}:${ports.publicLocal}`);
     }, 1000);
     return proxyPublicLocal(hash);
-  }).then(() => {
-    console.log('calling proxySelfSigned', fqdn);
-    return proxySelfSigned(fqdn);
   });
 }).catch(err => {
   console.error(err);
