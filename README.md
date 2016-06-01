@@ -23,7 +23,7 @@ Or with Docker:
 
 ````bash
 docker build -t pagekite-letsencrypt server/
-docker run -d --net=host pagekite-letsencrypt
+docker run -d --net=host -e SERVER=knilxof.org -e DOMAIN=box.knilxof.org pagekite-letsencrypt
 ````
 
 Run the tests (from the repo root):
