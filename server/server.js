@@ -17,21 +17,22 @@ const RECORD_TTL = 600;
 const CNAME_REF = 'CNAME_REF';
 
 function DnsApiServer() {
-    this.dnsServer = dnsCreateServer();
-    this.apiServer = {};
+  this.dnsServer = dnsCreateServer();
+  this.apiServer = {};
 
-    this.records = {
-      TXT: {},
-      A: {},
-      CNAME: {},
-    };
+  this.records = {
+    TXT: {},
+    A: {},
+    CNAME: {},
+  };
 }
 
 DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
   const records = this.records;
   const apiRoot = API_BASE.concat(zoneRoot.split('.').reverse());
   this.dnsServer.on('request', function(request, response) {
-    var type, host;
+    var type;
+    var host;
     try {
       type = types[request.question[0].type];
       host = request.question[0].name.toLowerCase();
@@ -43,13 +44,13 @@ DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
         records[type][host]) {
       var data;
       if (records[type][host] === CNAME_REF) {
-          type = 'CNAME';
+        type = 'CNAME';
       }
 
       if (type === 'CNAME') {
         data = records[type][host];
       } else if (type === 'TXT') {
-        data = [records[type][host]]
+        data = [records[type][host]];
       }
       response.answer.push(dns[type]({
         name: host,
@@ -122,7 +123,7 @@ DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
       if (fields.type === 'CNAME') {
         // Push an A record for the CNAME so that DNS requests for an A respond
         // with a CNAME record.
-        records['A'][host] = 'CNAME_REF';
+        records.A[host] = 'CNAME_REF';
       }
 
       records[fields.type][host] = fields.value;

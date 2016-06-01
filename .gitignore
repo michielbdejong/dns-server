@@ -1,2 +1,6 @@
-/node_modules
-records.json
+/server/node_modules
+/server/records.json
+/client/node_modules
+/client/scripts/certs
+/client/scripts/domains.txt
+/client/scripts/private_key.pem

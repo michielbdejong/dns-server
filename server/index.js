@@ -3,7 +3,8 @@
 var DnsApiServer = require('./server');
 
 if (process.argv.length < 5) {
-  console.error('Example usage: node src/index.js test/fixtures/certs/ 53 5300 box.knilxof.org');
+  console.error('Example usage: node server/index.js ' +
+      'test/fixtures/certs/ 53 5300 box.knilxof.org');
   return;
 }
 
