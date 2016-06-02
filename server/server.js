@@ -27,9 +27,10 @@ function DnsApiServer() {
   };
 }
 
-DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
+DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot, authDomain) {
   const records = this.records;
-  const apiRoot = API_BASE.concat(zoneRoot.split('.').reverse());
+  const apiRootZone = API_BASE.concat(zoneRoot.split('.').reverse());
+  const apiRootAuth = API_BASE.concat((zoneRoot + '.' + authDomain).split('.').reverse());
   this.dnsServer.on('request', function(request, response) {
     var type;
     var host;
@@ -89,20 +90,29 @@ DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
       res.end('Could not determine fingerprint of your client certificate');
       return;
     }
-    var expectedUrlParts = apiRoot.concat(fingerprint);
+
     var urlParts = req.url.split('/');
-    function rejectUrlPath() {
-      res.writeHead(401);
-      res.end('Please only edit under ' + expectedUrlParts.join('/'));
-    }
-    if (urlParts.length < expectedUrlParts.length) {
-      return rejectUrlPath();
-    }
-    for (var i = 0; i < expectedUrlParts.length; i++) {
-      if (urlParts[i] !== expectedUrlParts[i]) {
-        return rejectUrlPath();
+
+    function pathOk(expectedParts) {
+      if (urlParts.length < expectedParts.length) {
+        return false;
       }
+      for (var i = 0; i < expectedParts.length; i++) {
+        if (urlParts[i] !== expectedParts[i]) {
+          return false;
+        }
+      }
+      return true;
     }
+
+    var expectedUrlPartsAuth = apiRootAuth.concat(fingerprint);
+    var expectedUrlPartsZone = apiRootZone.concat(fingerprint);
+    if (!pathOk(expectedUrlPartsAuth) && !pathOk(expectedUrlPartsZone)) {
+      res.writeHead(401);
+      res.end('Please only edit under ' + expectedUrlPartsAuth.join('/') + ' or ' + expectedUrlPartsZone.join('/'));
+      return;
+    }
+
     var host = urlParts.splice(3).reverse().join('.');
 
     var body = '';
@@ -126,6 +136,7 @@ DnsApiServer.prototype.serve = function(certDir, dnsPort, apiPort, zoneRoot) {
         records.A[host] = 'CNAME_REF';
       }
 
+console.log('editing', host, fields);
       records[fields.type][host] = fields.value;
       fs.writeFile('./records.json', JSON.stringify(records), function(err) {
         if (err) {
